@@ -12,12 +12,16 @@ export class GeminiService {
       const ai = this.getAI();
       const validImages = brandingImages.filter(img => img !== null);
       
-      let basePrompt = `High-quality YouTube thumbnail background for: ${prompt}. Cinematic lighting, vibrant colors, ${aspectRatio} aspect ratio, professional digital art, sharp focus, no text.`;
+      // Specialized Face-Swap / Subject Integration Prompt
+      let basePrompt = `Generate a cinematic, high-impact YouTube thumbnail background for the topic: "${prompt}". `;
+      basePrompt += `Style: High-saturation, professional lighting, sharp focus, vibrant colors, ${aspectRatio} aspect ratio. `;
       
-      if (validImages.length === 2) {
-        basePrompt += " Combine the subjects, characters, or themes from the two provided reference images into a single cohesive scene.";
-      } else if (validImages.length === 1) {
-        basePrompt += " Please ensure the style and subjects are inspired by the provided reference image.";
+      if (validImages.length > 0) {
+        basePrompt += `\n\nCRITICAL INSTRUCTION: Perform a professional face-swap. Use the provided reference image(s) as the source for the main character's face, identity, and features. `;
+        basePrompt += `The generated subject in the scene must have the EXACT facial structure, expression, and likeness of the person in the images. `;
+        basePrompt += `Seamlessly integrate the face into the ${prompt} environment. Do not include any text in the generated image itself.`;
+      } else {
+        basePrompt += "Include a main character that looks like a generic viral YouTube creator. No text in image.";
       }
 
       const parts: any[] = [{ text: basePrompt }];
