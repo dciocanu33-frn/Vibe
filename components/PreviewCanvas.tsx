@@ -1,14 +1,17 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ThumbnailState } from '../types';
 
 interface PreviewCanvasProps {
   state: ThumbnailState;
+  onUploadBase: (dataUrl: string) => void;
 }
 
-const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state }) => {
+const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const renderId = useRef(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const canvasWidth = state.aspectRatio === '16:9' ? 1280 : 720;
   const canvasHeight = state.aspectRatio === '16:9' ? 720 : 1280;
@@ -59,8 +62,8 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state }) => {
       try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. Determine Background (Asset 1 takes priority as Full Screen)
-        const bgSource = state.brandingImage1 || state.backgroundImage;
+        // 1. Background Priority: Generated Result > Style Source 1 > Fallback Placeholder
+        const bgSource = state.backgroundImage || state.brandingImage1;
 
         if (bgSource) {
           try {
@@ -72,86 +75,20 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state }) => {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
           }
         } else {
-          ctx.fillStyle = '#111';
+          // Empty State Canvas Background
+          ctx.fillStyle = '#0a0a0a';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // 2. Darken Overlay
-        if (state.overlayOpacity > 0) {
-          ctx.fillStyle = `rgba(0,0,0,${state.overlayOpacity})`;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // 3. Render Branding Overlay (Asset 2)
-        if (state.brandingImage2) {
-          try {
-            const bImg = await loadImage(state.brandingImage2);
-            if (currentId !== renderId.current) return;
-
-            const bWidth = canvas.width * 0.45;
-            const bHeight = (bWidth / bImg.width) * bImg.height;
-            const bX = state.brandingPosition2 === 'left' ? -20 : canvas.width - bWidth + 20;
-            const bY = canvas.height - bHeight;
-
-            ctx.save();
-            ctx.shadowBlur = 40;
-            ctx.shadowColor = state.primaryColor || 'white';
-            ctx.drawImage(bImg, bX, bY, bWidth, bHeight);
-            ctx.restore();
-            ctx.drawImage(bImg, bX, bY, bWidth, bHeight);
-          } catch (e) {
-            console.warn("Branding asset failed to load", e);
+          
+          // Subtle grid pattern
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = 2;
+          for(let i = 0; i < canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+          }
+          for(let i = 0; i < canvas.height; i += 40) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
           }
         }
-
-        // 4. Fixed Viral Layout Text (Bottom Left or Center)
-        ctx.textAlign = 'left';
-        const padding = state.aspectRatio === '16:9' ? 60 : 40;
-        let x = padding;
-        let y = canvas.height - (state.aspectRatio === '16:9' ? 180 : 350);
-
-        // Adjust text to not overlap branding if on the same side
-        if (state.brandingImage2 && state.brandingPosition2 === 'left') {
-           x = canvas.width * 0.45;
-        }
-
-        const scaleFactor = state.aspectRatio === '16:9' ? 1 : 0.85;
-        let mainFont = `bold ${90 * scaleFactor}px Montserrat`;
-        let subFont = `bold ${45 * scaleFactor}px Montserrat`;
-
-        if (state.textStyle === 'impact') {
-          mainFont = `900 ${110 * scaleFactor}px Montserrat`;
-          subFont = `900 ${50 * scaleFactor}px Montserrat`;
-        } else if (state.textStyle === 'comic') {
-          mainFont = `${90 * scaleFactor}px Bangers`;
-          subFont = `${45 * scaleFactor}px Bangers`;
-        } else if (state.textStyle === 'gradient') {
-          const grad = ctx.createLinearGradient(0, y - 50, 0, y + 50);
-          grad.addColorStop(0, '#fff');
-          grad.addColorStop(1, state.primaryColor);
-          ctx.fillStyle = grad;
-        }
-
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 10;
-        
-        // Subtitle
-        ctx.font = subFont;
-        ctx.fillStyle = '#fff';
-        ctx.fillText(state.subtitle, x, y + (100 * scaleFactor));
-
-        // Main Title
-        ctx.font = mainFont;
-        if (state.textStyle !== 'gradient') {
-          ctx.fillStyle = state.primaryColor === '#ffffff' ? '#fff' : state.primaryColor;
-        }
-        
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 12 * scaleFactor;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(state.title, x, y);
-        ctx.fillText(state.title, x, y);
-
       } catch (err) {
         console.error("Render failure:", err);
       }
@@ -159,6 +96,32 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state }) => {
 
     render();
   }, [state, canvasWidth, canvasHeight]);
+
+  const handleFile = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUploadBase(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  };
 
   const downloadImage = () => {
     const canvas = canvasRef.current;
@@ -169,30 +132,94 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state }) => {
     link.click();
   };
 
+  const hasImage = !!(state.backgroundImage || state.brandingImage1);
+
   return (
-    <div className="flex flex-col items-center gap-6 w-full">
+    <div className="flex flex-col items-center gap-6 w-full max-w-5xl">
       <div 
-        className="relative group rounded-xl overflow-hidden shadow-2xl shadow-black ring-1 ring-white/10"
+        className={`relative group rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-all duration-300 ring-4 ${
+          isDragging ? 'ring-red-600 scale-[1.02]' : 'ring-white/5'
+        } ${!hasImage ? 'cursor-pointer hover:ring-white/20' : ''}`}
         style={{ 
-          maxWidth: '100%', 
-          maxHeight: '70vh', 
+          width: '100%', 
+          maxWidth: state.aspectRatio === '16:9' ? '1000px' : '400px',
           aspectRatio: state.aspectRatio === '16:9' ? '16/9' : '9/16' 
         }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !hasImage && fileInputRef.current?.click()}
       >
         <canvas 
           ref={canvasRef} 
           width={canvasWidth} 
           height={canvasHeight}
-          className="w-full h-full object-contain bg-[#1a1a1a]"
+          className="w-full h-full object-contain bg-[#050505]"
         />
+
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*" 
+          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        />
+
+        {!hasImage && !isDragging && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none p-10 text-center">
+             <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-6 border border-red-600/30">
+                <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+             </div>
+             <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Drop Base Image Here</h2>
+             <p className="text-gray-400 text-sm font-medium">Or click to select Source 1 (Style & Content)</p>
+          </div>
+        )}
+
+        {isDragging && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-600/20 backdrop-blur-md border-4 border-dashed border-red-600 pointer-events-none animate-pulse">
+             <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Release to Style</h2>
+          </div>
+        )}
+
+        {hasImage && (
+          <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+              className="p-3 bg-black/60 hover:bg-red-600 text-white rounded-xl backdrop-blur-md border border-white/10 transition-all shadow-xl flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-xs font-black uppercase tracking-widest">Replace Base</span>
+            </button>
+          </div>
+        )}
+
+        {state.backgroundImage && (
+          <div className="absolute top-4 left-4 px-3 py-1 bg-red-600 text-white text-[10px] font-black uppercase rounded shadow-lg animate-pulse">
+            AI Generated Result
+          </div>
+        )}
       </div>
       
-      <button 
-        onClick={downloadImage}
-        className="px-8 py-4 bg-white text-black font-black rounded-xl hover:bg-gray-100 active:scale-95 transition-all flex items-center gap-3 shadow-xl"
-      >
-        Download {state.aspectRatio} Render
-      </button>
+      <div className="flex gap-4 w-full justify-center">
+        <button 
+          onClick={downloadImage}
+          disabled={!hasImage}
+          className={`px-10 py-5 font-black rounded-2xl transition-all flex items-center gap-3 shadow-2xl uppercase tracking-tighter text-lg ${
+            hasImage 
+            ? 'bg-white text-black hover:bg-gray-200 active:scale-95 shadow-white/10' 
+            : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+          }`}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download Image
+        </button>
+      </div>
     </div>
   );
 };

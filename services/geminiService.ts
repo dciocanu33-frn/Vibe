@@ -10,36 +10,44 @@ export class GeminiService {
   async generateBackground(prompt: string, aspectRatio: AspectRatio, brandingImages: (string | null)[]): Promise<string | null> {
     try {
       const ai = this.getAI();
-      const validImages = brandingImages.filter(img => img !== null);
+      const styleSource = brandingImages[0];
+      const identityReference = brandingImages[1];
       
-      // Specialized Face-Swap / Subject Integration Prompt
-      let basePrompt = `Generate a cinematic, high-impact YouTube thumbnail background for the topic: "${prompt}". `;
-      basePrompt += `Style: High-saturation, professional lighting, sharp focus, vibrant colors, ${aspectRatio} aspect ratio. `;
-      
-      if (validImages.length > 0) {
-        basePrompt += `\n\nCRITICAL INSTRUCTION: Perform a professional face-swap. Use the provided reference image(s) as the source for the main character's face, identity, and features. `;
-        basePrompt += `The generated subject in the scene must have the EXACT facial structure, expression, and likeness of the person in the images. `;
-        basePrompt += `Seamlessly integrate the face into the ${prompt} environment. Do not include any text in the generated image itself.`;
+      let systemPrompt = `Generate a viral YouTube thumbnail for the topic: "${prompt}". `;
+      systemPrompt += `Style: High energy, high saturation, professional clickbait aesthetic. `;
+
+      const parts: any[] = [];
+
+      if (styleSource && identityReference) {
+        // STYLE FUSION + IDENTITY SWAP
+        systemPrompt += `\n\nCRITICAL INSTRUCTION: IMAGE 1 is the source for STYLE, COLOR PALETTE, and SCENE CONTENT. IMAGE 2 is the BRANDING REFERENCE (the subject's identity). `;
+        systemPrompt += `You MUST generate a result that adopts the exact visual style, lighting, and composition of IMAGE 1, but integrates the identity from IMAGE 2 as the main character. `;
+        systemPrompt += `The person in the final image must have the EXACT facial features and recognizable likeness of the person in IMAGE 2. `;
+        systemPrompt += `The background and general content should remain consistent with the theme shown in IMAGE 1 and the prompt: "${prompt}". No text in image.`;
+        
+        parts.push({ text: systemPrompt });
+        parts.push(this.createImagePart(styleSource));
+        parts.push(this.createImagePart(identityReference));
+      } else if (identityReference) {
+        // GENERATE SCENE FROM PROMPT + IDENTITY
+        systemPrompt += `\n\nCRITICAL INSTRUCTION: Generate a new scene based on "${prompt}". Use the provided image (IDENTITY REFERENCE) to define the main character. `;
+        systemPrompt += `The main subject MUST look exactly like the person in the provided image. `;
+        systemPrompt += `Integrate their likeness into a cinematic YouTube-style environment. No text in image.`;
+        
+        parts.push({ text: systemPrompt });
+        parts.push(this.createImagePart(identityReference));
+      } else if (styleSource) {
+        // STYLE SOURCE ONLY
+        systemPrompt += `\n\nCRITICAL INSTRUCTION: Use IMAGE 1 as your visual template. Enhance the content based on the topic: "${prompt}". `;
+        systemPrompt += `Apply viral YouTube grading and lighting. No text in image.`;
+        
+        parts.push({ text: systemPrompt });
+        parts.push(this.createImagePart(styleSource));
       } else {
-        basePrompt += "Include a main character that looks like a generic viral YouTube creator. No text in image.";
+        // PURE PROMPT GENERATION
+        systemPrompt += `\n\nGenerate a brand new high-impact thumbnail scene based on "${prompt}". No text in image.`;
+        parts.push({ text: systemPrompt });
       }
-
-      const parts: any[] = [{ text: basePrompt }];
-
-      validImages.forEach((img) => {
-        const mimeTypeParts = img!.split(';');
-        if (mimeTypeParts.length > 0) {
-          const mimeType = mimeTypeParts[0].split(':')[1];
-          const base64Data = img!.split(',')[1];
-          
-          parts.push({
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType
-            }
-          });
-        }
-      });
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -66,6 +74,17 @@ export class GeminiService {
       console.error("Error generating background:", error);
       return null;
     }
+  }
+
+  private createImagePart(dataUrl: string) {
+    const [mimePart, base64Part] = dataUrl.split(',');
+    const mimeType = mimePart.split(':')[1].split(';')[0];
+    return {
+      inlineData: {
+        data: base64Part,
+        mimeType: mimeType
+      }
+    };
   }
 
   async getViralSuggestions(topic: string): Promise<SuggestionResponse> {
