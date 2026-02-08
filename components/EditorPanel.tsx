@@ -28,7 +28,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
     return (
       <div className="relative group mb-4">
         <label className="block text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">
-          {index === 1 ? 'Source 1: Style & Content' : 'Source 2: Branding Identity'}
+          {index === 1 ? 'Source 1: Identity Reference' : 'Source 2: Style Template'}
         </label>
         {img ? (
           <div className="space-y-3">
@@ -37,7 +37,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">
                  <div className="flex flex-col">
                    <span className="text-[9px] font-black text-white uppercase tracking-tighter">
-                     {index === 1 ? 'STYLE TEMPLATE' : 'IDENTITY REFERENCE'}
+                     {index === 1 ? 'IDENTITY REFERENCE' : 'STYLE TEMPLATE'}
                    </span>
                    <span className="text-[8px] text-white/60 font-medium">Uploaded</span>
                  </div>
@@ -55,17 +55,17 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
             <div className="flex flex-col items-center justify-center px-4 text-center">
               <div className="p-2 bg-white/5 rounded-lg mb-1 group-hover/upload:bg-red-500/10 transition-colors">
                 {index === 1 ? (
-                  <svg className="w-4 h-4 text-gray-500 group-hover/upload:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                   <svg className="w-4 h-4 text-gray-500 group-hover/upload:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 ) : (
                   <svg className="w-4 h-4 text-gray-500 group-hover/upload:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 )}
               </div>
               <p className="text-[9px] text-gray-500 font-black uppercase group-hover/upload:text-gray-300">
-                {index === 1 ? 'Style' : 'Identity'}
+                {index === 1 ? 'Identity' : 'Style'}
               </p>
             </div>
             <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload(index)} />
@@ -96,6 +96,12 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
           <div className="space-y-4">
             {renderBrandingSection(1)}
             {renderBrandingSection(2)}
+          </div>
+
+          <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
+            <p className="text-[9px] text-red-400/80 leading-relaxed font-medium">
+              <span className="font-black">PRO TIP:</span> AI will apply the likeness from Identity (Source 1) into the composition of Style (Source 2).
+            </p>
           </div>
         </div>
       </section>

@@ -10,8 +10,8 @@ export class GeminiService {
   async generateBackground(prompt: string, aspectRatio: AspectRatio, brandingImages: (string | null)[]): Promise<string | null> {
     try {
       const ai = this.getAI();
-      const styleSource = brandingImages[0];
-      const identityReference = brandingImages[1];
+      const identityReference = brandingImages[0]; // NOW Source 1
+      const styleSource = brandingImages[1];      // NOW Source 2
       
       let systemPrompt = `Generate a viral YouTube thumbnail for the topic: "${prompt}". `;
       systemPrompt += `Style: High energy, high saturation, professional clickbait aesthetic. `;
@@ -19,15 +19,15 @@ export class GeminiService {
       const parts: any[] = [];
 
       if (styleSource && identityReference) {
-        // STYLE FUSION + IDENTITY SWAP
-        systemPrompt += `\n\nCRITICAL INSTRUCTION: IMAGE 1 is the source for STYLE, COLOR PALETTE, and SCENE CONTENT. IMAGE 2 is the BRANDING REFERENCE (the subject's identity). `;
-        systemPrompt += `You MUST generate a result that adopts the exact visual style, lighting, and composition of IMAGE 1, but integrates the identity from IMAGE 2 as the main character. `;
-        systemPrompt += `The person in the final image must have the EXACT facial features and recognizable likeness of the person in IMAGE 2. `;
-        systemPrompt += `The background and general content should remain consistent with the theme shown in IMAGE 1 and the prompt: "${prompt}". No text in image.`;
+        // IDENTITY REFERENCE (Source 1) + STYLE TEMPLATE (Source 2)
+        systemPrompt += `\n\nCRITICAL INSTRUCTION: IMAGE 1 is the BRANDING REFERENCE (the subject's identity). IMAGE 2 is the source for STYLE, COLOR PALETTE, and SCENE CONTENT. `;
+        systemPrompt += `You MUST generate a result that adopts the exact visual style, lighting, and composition of IMAGE 2, but integrates the identity from IMAGE 1 as the main character. `;
+        systemPrompt += `The person in the final image must have the EXACT facial features and recognizable likeness of the person in IMAGE 1. `;
+        systemPrompt += `The background and general content should remain consistent with the theme shown in IMAGE 2 and the prompt: "${prompt}". No text in image.`;
         
         parts.push({ text: systemPrompt });
-        parts.push(this.createImagePart(styleSource));
         parts.push(this.createImagePart(identityReference));
+        parts.push(this.createImagePart(styleSource));
       } else if (identityReference) {
         // GENERATE SCENE FROM PROMPT + IDENTITY
         systemPrompt += `\n\nCRITICAL INSTRUCTION: Generate a new scene based on "${prompt}". Use the provided image (IDENTITY REFERENCE) to define the main character. `;
@@ -38,7 +38,7 @@ export class GeminiService {
         parts.push(this.createImagePart(identityReference));
       } else if (styleSource) {
         // STYLE SOURCE ONLY
-        systemPrompt += `\n\nCRITICAL INSTRUCTION: Use IMAGE 1 as your visual template. Enhance the content based on the topic: "${prompt}". `;
+        systemPrompt += `\n\nCRITICAL INSTRUCTION: Use the provided image (STYLE TEMPLATE) as your visual template. Enhance the content based on the topic: "${prompt}". `;
         systemPrompt += `Apply viral YouTube grading and lighting. No text in image.`;
         
         parts.push({ text: systemPrompt });

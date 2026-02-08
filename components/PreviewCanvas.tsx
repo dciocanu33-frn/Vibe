@@ -62,7 +62,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
       try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. Background Priority: Generated Result > Style Source 1 > Fallback Placeholder
+        // 1. Background Priority: Generated Result > Identity Source 1 > Fallback Placeholder
         const bgSource = state.backgroundImage || state.brandingImage1;
 
         if (bgSource) {
@@ -169,17 +169,17 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none p-10 text-center">
              <div className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mb-6 border border-red-600/30">
                 <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
              </div>
-             <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Drop Base Image Here</h2>
-             <p className="text-gray-400 text-sm font-medium">Or click to select Source 1 (Style & Content)</p>
+             <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Drop Identity Reference Here</h2>
+             <p className="text-gray-400 text-sm font-medium">Or click to select Source 1 (The Face)</p>
           </div>
         )}
 
         {isDragging && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-600/20 backdrop-blur-md border-4 border-dashed border-red-600 pointer-events-none animate-pulse">
-             <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Release to Style</h2>
+             <h2 className="text-4xl font-black uppercase tracking-tighter text-white">Release Identity</h2>
           </div>
         )}
 
@@ -192,7 +192,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span className="text-xs font-black uppercase tracking-widest">Replace Base</span>
+              <span className="text-xs font-black uppercase tracking-widest">Replace Identity</span>
             </button>
           </div>
         )}
