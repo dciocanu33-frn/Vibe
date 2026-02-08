@@ -62,7 +62,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
       try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. Background Priority: Generated Result > Identity Source 1 > Fallback Placeholder
+        // 1. Background Priority: Generated Result > Creator Reference > Fallback
         const bgSource = state.backgroundImage || state.brandingImage1;
 
         if (bgSource) {
@@ -127,7 +127,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement('a');
-    link.download = `viral-thumbnail-${Date.now()}.png`;
+    link.download = `ugc-thumbnail-${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -172,8 +172,8 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
              </div>
-             <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Drop Identity Reference Here</h2>
-             <p className="text-gray-400 text-sm font-medium">Or click to select Source 1 (The Face)</p>
+             <h2 className="text-2xl font-black uppercase tracking-tighter mb-2">Drop Creator Face</h2>
+             <p className="text-gray-400 text-sm font-medium">Or click to select Source 1 (The Identity)</p>
           </div>
         )}
 
@@ -192,14 +192,14 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span className="text-xs font-black uppercase tracking-widest">Replace Identity</span>
+              <span className="text-xs font-black uppercase tracking-widest">Swap Identity</span>
             </button>
           </div>
         )}
 
         {state.backgroundImage && (
           <div className="absolute top-4 left-4 px-3 py-1 bg-red-600 text-white text-[10px] font-black uppercase rounded shadow-lg animate-pulse">
-            AI Generated Result
+            UGC AI Result
           </div>
         )}
       </div>
@@ -217,7 +217,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({ state, onUploadBase }) =>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Download Image
+          Download PNG
         </button>
       </div>
     </div>

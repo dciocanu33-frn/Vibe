@@ -28,7 +28,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
     return (
       <div className="relative group mb-4">
         <label className="block text-[10px] text-gray-500 font-black uppercase mb-2 tracking-widest">
-          {index === 1 ? 'Source 1: Identity Reference' : 'Source 2: Style Template'}
+          {index === 1 ? 'Source 1: Creator Reference' : 'Source 2: Aesthetic / Vibe'}
         </label>
         {img ? (
           <div className="space-y-3">
@@ -37,9 +37,9 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">
                  <div className="flex flex-col">
                    <span className="text-[9px] font-black text-white uppercase tracking-tighter">
-                     {index === 1 ? 'IDENTITY REFERENCE' : 'STYLE TEMPLATE'}
+                     {index === 1 ? 'CREATOR FACE' : 'AESTHETIC REF'}
                    </span>
-                   <span className="text-[8px] text-white/60 font-medium">Uploaded</span>
+                   <span className="text-[8px] text-white/60 font-medium">Ready for Fusion</span>
                  </div>
               </div>
               <button 
@@ -65,7 +65,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
                 )}
               </div>
               <p className="text-[9px] text-gray-500 font-black uppercase group-hover/upload:text-gray-300">
-                {index === 1 ? 'Identity' : 'Style'}
+                {index === 1 ? 'Add Face' : 'Add Vibe'}
               </p>
             </div>
             <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload(index)} />
@@ -80,16 +80,16 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
       <section>
         <div className="flex items-center gap-2 mb-4">
            <div className="w-2 h-2 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.6)]"></div>
-           <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Creative Intent</h3>
+           <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">UGC Creator Intent</h3>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-widest">Topic / Context</label>
+            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1 tracking-widest">UGC Context / Scenario</label>
             <textarea 
               value={state.topic}
               onChange={(e) => onChange({ topic: e.target.value })}
               className="w-full bg-[#1a1a1a] border border-[#222] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-red-600 font-medium text-white placeholder:text-gray-700 transition-all resize-none h-24"
-              placeholder="e.g. A high-stakes survival scene in a snowy wilderness"
+              placeholder="e.g. Unboxing a premium laptop with an excited expression"
             />
           </div>
           
@@ -100,7 +100,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
 
           <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
             <p className="text-[9px] text-red-400/80 leading-relaxed font-medium">
-              <span className="font-black">PRO TIP:</span> AI will apply the likeness from Identity (Source 1) into the composition of Style (Source 2).
+              <span className="font-black uppercase">UGC TIP:</span> Upload your own photo as <span className="text-white">Source 1</span>. Upload a high-end product shot or aesthetic scene as <span className="text-white">Source 2</span>. 
+              The AI will fuse your identity into the aesthetic context seamlessly.
             </p>
           </div>
         </div>
@@ -120,6 +121,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
               }`}
             >
               <span className="text-[10px] font-black uppercase tracking-widest">{id}</span>
+              <span className="text-[8px] opacity-60">{id === '16:9' ? 'YouTube' : 'Reels/Shorts'}</span>
             </button>
           ))}
         </div>
@@ -134,13 +136,16 @@ const EditorPanel: React.FC<EditorPanelProps> = ({ state, onChange, onGenerateBa
           }`}
         >
           {isGenerating ? (
-            <svg className="animate-spin h-5 w-5 text-gray-600" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <div className="flex items-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-white/50" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>ANALYZING SCENE...</span>
+            </div>
           ) : (
             <>
-              <span>GENERATE AI RESULT</span>
+              <span>GENERATE UGC THUMBNAIL</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>

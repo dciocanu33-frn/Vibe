@@ -4,87 +4,122 @@ import { SuggestionResponse, AspectRatio } from "../types";
 
 export class GeminiService {
   private getAI() {
+    // Note: Veo models will use the key from process.env.API_KEY which is injected
+    // after user selects via window.aistudio.openSelectKey()
     return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   }
 
   async generateBackground(prompt: string, aspectRatio: AspectRatio, brandingImages: (string | null)[]): Promise<string | null> {
     try {
       const ai = this.getAI();
-      const identityReference = brandingImages[0]; // NOW Source 1
-      const styleSource = brandingImages[1];      // NOW Source 2
+      const identityReference = brandingImages[0];
+      const styleSource = brandingImages[1];
       
-      let systemPrompt = `Generate a viral YouTube thumbnail for the topic: "${prompt}". `;
-      systemPrompt += `Style: High energy, high saturation, professional clickbait aesthetic. `;
+      let systemInstruction = `You are an expert UGC (User Generated Content) and YouTube Thumbnail Strategist. 
+      Your goal is to create images that look like high-end vlogger photography. 
+      Focus on authentic skin textures and natural but polished facial features.
+      IMPORTANT: STRICTLY NO TEXT, GRAPHICS, OR WATERMARKS.`;
 
       const parts: any[] = [];
+      let userPrompt = "";
 
-      if (styleSource && identityReference) {
-        // IDENTITY REFERENCE (Source 1) + STYLE TEMPLATE (Source 2)
-        systemPrompt += `\n\nCRITICAL INSTRUCTION: IMAGE 1 is the BRANDING REFERENCE (the subject's identity). IMAGE 2 is the source for STYLE, COLOR PALETTE, and SCENE CONTENT. `;
-        systemPrompt += `You MUST generate a result that adopts the exact visual style, lighting, and composition of IMAGE 2, but integrates the identity from IMAGE 1 as the main character. `;
-        systemPrompt += `The person in the final image must have the EXACT facial features and recognizable likeness of the person in IMAGE 1. `;
-        systemPrompt += `The background and general content should remain consistent with the theme shown in IMAGE 2 and the prompt: "${prompt}". No text in image.`;
-        
-        parts.push({ text: systemPrompt });
+      if (identityReference && styleSource) {
+        userPrompt = `UGC FUSION TASK: Create a unified thumbnail for: "${prompt}". 
+        Base Identity (Image 1) must be preserved. 
+        Aesthetic Vibe (Image 2) must be applied (colors, lighting). 
+        Seamlessly place creator 1 into environment 2.`;
         parts.push(this.createImagePart(identityReference));
         parts.push(this.createImagePart(styleSource));
       } else if (identityReference) {
-        // GENERATE SCENE FROM PROMPT + IDENTITY
-        systemPrompt += `\n\nCRITICAL INSTRUCTION: Generate a new scene based on "${prompt}". Use the provided image (IDENTITY REFERENCE) to define the main character. `;
-        systemPrompt += `The main subject MUST look exactly like the person in the provided image. `;
-        systemPrompt += `Integrate their likeness into a cinematic YouTube-style environment. No text in image.`;
-        
-        parts.push({ text: systemPrompt });
+        userPrompt = `UGC CREATOR SCENE: Topic "${prompt}". Use face from Image 1. Professional cinematic lighting.`;
         parts.push(this.createImagePart(identityReference));
-      } else if (styleSource) {
-        // STYLE SOURCE ONLY
-        systemPrompt += `\n\nCRITICAL INSTRUCTION: Use the provided image (STYLE TEMPLATE) as your visual template. Enhance the content based on the topic: "${prompt}". `;
-        systemPrompt += `Apply viral YouTube grading and lighting. No text in image.`;
-        
-        parts.push({ text: systemPrompt });
-        parts.push(this.createImagePart(styleSource));
       } else {
-        // PURE PROMPT GENERATION
-        systemPrompt += `\n\nGenerate a brand new high-impact thumbnail scene based on "${prompt}". No text in image.`;
-        parts.push({ text: systemPrompt });
+        userPrompt = `AUTHENTIC UGC THUMBNAIL: Topic "${prompt}". High-quality camera look, vivid colors, natural.`;
       }
+
+      parts.push({ text: userPrompt });
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: parts
-        },
+        contents: { parts },
         config: {
-          imageConfig: {
-            aspectRatio: aspectRatio
-          }
+          systemInstruction,
+          imageConfig: { aspectRatio }
         }
       });
 
-      const candidates = response.candidates;
-      if (!candidates || candidates.length === 0) return null;
-
-      for (const part of candidates[0].content.parts) {
-        if (part.inlineData) {
-          return `data:image/png;base64,${part.inlineData.data}`;
-        }
-      }
-      return null;
+      const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+      return part ? `data:image/png;base64,${part.inlineData.data}` : null;
     } catch (error) {
-      console.error("Error generating background:", error);
+      console.error("UGC Generation Error:", error);
       return null;
     }
   }
 
-  private createImagePart(dataUrl: string) {
+  async generateVideo(
+    prompt: string, 
+    aspectRatio: AspectRatio, 
+    resolution: '720p' | '1080p',
+    startImage: string | null,
+    endImage: string | null,
+    onStatusUpdate: (msg: string) => void
+  ): Promise<string | null> {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      onStatusUpdate("Initializing video generation engine...");
+
+      const videoConfig: any = {
+        model: 'veo-3.1-fast-generate-preview',
+        prompt: prompt,
+        config: {
+          numberOfVideos: 1,
+          resolution,
+          aspectRatio
+        }
+      };
+
+      if (startImage) {
+        const { data, mimeType } = this.parseImageData(startImage);
+        videoConfig.image = { imageBytes: data, mimeType };
+      }
+
+      if (endImage) {
+        const { data, mimeType } = this.parseImageData(endImage);
+        videoConfig.config.lastFrame = { imageBytes: data, mimeType };
+      }
+
+      let operation = await ai.models.generateVideos(videoConfig);
+      
+      onStatusUpdate("Model is dreaming up your content... (This usually takes 1-3 minutes)");
+      
+      while (!operation.done) {
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        onStatusUpdate("Adding final touches to the pixels...");
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+      }
+
+      const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+      if (!downloadLink) throw new Error("Video generation failed - no URI returned");
+
+      onStatusUpdate("Downloading your cinematic masterpiece...");
+      const fetchResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+      const blob = await fetchResponse.blob();
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error("Video Generation Error:", error);
+      throw error;
+    }
+  }
+
+  private parseImageData(dataUrl: string) {
     const [mimePart, base64Part] = dataUrl.split(',');
     const mimeType = mimePart.split(':')[1].split(';')[0];
-    return {
-      inlineData: {
-        data: base64Part,
-        mimeType: mimeType
-      }
-    };
+    return { data: base64Part, mimeType };
+  }
+
+  private createImagePart(dataUrl: string) {
+    const { data, mimeType } = this.parseImageData(dataUrl);
+    return { inlineData: { data, mimeType } };
   }
 
   async getViralSuggestions(topic: string): Promise<SuggestionResponse> {
@@ -92,39 +127,22 @@ export class GeminiService {
       const ai = this.getAI();
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `I am creating a YouTube thumbnail about "${topic}". Suggest 5 viral, high-CTR titles and 3 specific design tips.`,
+        contents: `Topic: "${topic}". Suggest 5 viral UGC-style YouTube titles and 3 framing tips.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              viralTitles: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              },
-              designTips: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              }
+              viralTitles: { type: Type.ARRAY, items: { type: Type.STRING } },
+              designTips: { type: Type.ARRAY, items: { type: Type.STRING } }
             },
             required: ["viralTitles", "designTips"]
           }
         }
       });
-
-      const text = response.text;
-      if (!text) throw new Error("No response text");
-
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const cleanedJson = jsonMatch ? jsonMatch[0] : text;
-      
-      return JSON.parse(cleanedJson);
+      return JSON.parse(response.text || '{}');
     } catch (error) {
-      console.error("Error getting suggestions:", error);
-      return { 
-        viralTitles: ["AMAZING Result!", "Don't Miss This!", "I Tried It..."], 
-        designTips: ["Use bright colors", "Add a shocked face"] 
-      };
+      return { viralTitles: [], designTips: [] };
     }
   }
 }

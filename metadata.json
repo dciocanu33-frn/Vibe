@@ -1,6 +1,6 @@
 {
-  "name": "ViralVibe - AI YouTube Thumbnail Generator",
-  "description": "A powerful, AI-driven thumbnail designer that uses Gemini 2.5 Flash Image to generate high-click-rate backgrounds and suggests viral titles.",
+  "name": "Vibe Photo Studio - AI Content Creation",
+  "description": "A high-end AI production studio for UGC creators, specializing in viral thumbnails and cinematic video content.",
   "requestFramePermissions": [
     "camera"
   ]
